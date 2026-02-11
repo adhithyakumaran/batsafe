@@ -7,6 +7,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "10mb" }));
 
+// DEBUG: Log every request
+app.use((req, res, next) => {
+    console.log(`➡️  INCOMING: ${req.method} ${req.url}`);
+    next();
+});
+
 // ---------------- IN-MEMORY DB (No MongoDB required) ----------------
 const devices = {}; // Store device data here: { "device001": { ... } }
 
@@ -14,7 +20,7 @@ const devices = {}; // Store device data here: { "device001": { ... } }
 // ESP32 calls this to update its status
 app.post("/api/device/update", async (req, res) => {
     try {
-        const { deviceID, lat, lng, current, espIP } = req.body;
+        const { deviceID, lat, lng, voltage, current, is_secure, espIP } = req.body;
 
         if (!deviceID) {
             return res.status(400).json({ error: "deviceID is required" });
@@ -29,12 +35,14 @@ app.post("/api/device/update", async (req, res) => {
             owner: existing.owner || "Unknown",
             lat: lat || existing.lat,
             lng: lng || existing.lng,
+            voltage: voltage !== undefined ? voltage : existing.voltage,
             current: current !== undefined ? current : existing.current,
+            is_secure: is_secure !== undefined ? is_secure : existing.is_secure,
             espIP: espIP || existing.espIP,
             lastSeen: new Date()
         };
 
-        console.log(`📡 Update from ${deviceID} | V: ${current} | IP: ${espIP}`);
+        console.log(`📡 Update from ${deviceID} | V: ${voltage} | A: ${current} | Secure: ${is_secure}`);
         res.json({ status: "updated" });
     } catch (error) {
         console.error("Update Error:", error);

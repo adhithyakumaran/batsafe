@@ -77,6 +77,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSecurityStatus(),
+            const SizedBox(height: 24),
             _buildLiveStream(),
             const SizedBox(height: 24),
             _buildStatsGrid(),
@@ -158,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildStatCard(
             'Voltage',
-            '${_deviceData?.current.toStringAsFixed(2) ?? "0.00"} V',
+            '${_deviceData?.voltage.toStringAsFixed(1) ?? "0.0"} V',
             Icons.bolt,
           ),
         ),
@@ -166,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildStatCard(
             'Current',
-            '${((_deviceData?.current ?? 0) / 10).toStringAsFixed(2)} A',
+            '${_deviceData?.current.toStringAsFixed(2) ?? "0.00"} A',
             Icons.electric_meter,
           ),
         ),
@@ -207,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Power Consumption", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text("Live Current Usage (Amps)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 16),
           Expanded(
             child: LineChart(
@@ -231,6 +233,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityStatus() {
+    final isSecure = _deviceData?.isSecure ?? true;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isSecure ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isSecure ? Colors.green : Colors.red, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isSecure ? Icons.lock : Icons.warning_amber_rounded,
+            color: isSecure ? Colors.green : Colors.red,
+            size: 32,
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isSecure ? "SYSTEM SECURE" : "THEFT ALERT",
+                style: TextStyle(
+                  color: isSecure ? Colors.green.shade900 : Colors.red.shade900,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                isSecure ? "Object is present on sensor" : "Object REMOVED!",
+                style: TextStyle(
+                  color: isSecure ? Colors.green.shade700 : Colors.red.shade700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ],
       ),

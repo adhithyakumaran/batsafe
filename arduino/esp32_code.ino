@@ -9,7 +9,7 @@ const char* ssid = "adhee";
 const char* password = "12345678";
 
 // REPLACE WITH YOUR PC's IP ADDRESS (Check using ipconfig or ifconfig)
-String backendIP = "10.158.176.99"; 
+String backendIP = "10.147.197.99"; 
 
 // Device ID (Must match what you want in the app)
 String deviceID = "device001"; 
@@ -20,13 +20,14 @@ String deviceID = "device001";
 #define ACS_PIN 13
 #define R1 10000.0
 #define R2 15000.0
+#define FLASH_PIN 4
 
 WiFiServer server(80);
-bool streamingEnabled = true; // Default to true for testing
 
 String latitude = "13.0827";  // Default 0
 String longitude = "80.2707"; // Default 0
-float currentVoltage = 0.0;
+float currentAmps = 0.0;
+bool objectSecure = true; // True = Object Present, False = Object Removed
 
 unsigned long lastUpdate = 0;
 const int updateInterval = 2000; // Send data every 2 seconds
@@ -65,10 +66,24 @@ void startCamera() {
 }
 
 // ---------------- SENSORS ----------------
-float readCurrentVoltage() {
+float readCurrent() {
   int adc = analogRead(ACS_PIN);
-  float v = adc * (3.3 / 4095.0);
-  return v * ((R1 + R2) / R2);
+  
+  // --- Noise Filter ---
+  // If sensor is reading near 0 (disconnected/noise), return 0.0
+  // Adjust threshold as needed for your specific sensor (ACS712 idle is ~2048)
+  if (adc < 100) {
+      return 0.0;
+  }
+  // -----------------
+
+  // Basic ACS712 Conversion (Approximate)
+  // 3.3V System, 4096 Resolution. 
+  // Zero point usually VCC/2.
+  // This is a placeholder calibration.
+  float voltage = adc * (3.3 / 4095.0);
+  float amps = (voltage - 1.65) / 0.185; // 0.185V/A for 5A module
+  return abs(amps);
 }
 
 void readGPS() {
@@ -107,7 +122,9 @@ void sendDataToBackend() {
     jsonPayload += "\"deviceID\": \"" + deviceID + "\",";
     jsonPayload += "\"lat\": \"" + latitude + "\",";
     jsonPayload += "\"lng\": \"" + longitude + "\",";
-    jsonPayload += "\"current\": " + String(currentVoltage) + ",";
+    jsonPayload += "\"voltage\": 12.0,"; // HARDCODED 12V
+    jsonPayload += "\"current\": " + String(currentAmps) + ",";
+    jsonPayload += "\"is_secure\": " + String(objectSecure ? "true" : "false") + ","; 
     jsonPayload += "\"espIP\": \"" + WiFi.localIP().toString() + "\"";
     jsonPayload += "}";
 
@@ -126,13 +143,25 @@ void sendDataToBackend() {
 
 // ---------------- STREAM SERVER ----------------
 void handleStream(WiFiClient client) {
+  // Turn on Flash immediately for better low-light performance
+  // digitalWrite(FLASH_PIN, HIGH);
+  
   client.println("HTTP/1.1 200 OK");
   client.println("Content-Type: multipart/x-mixed-replace; boundary=frame");
   client.println();
 
   while (client.connected()) {
+    
+    // ** SECURITY FEATURE **
+    // If Object IS Secure (IR reads LOW -> Object Present), DO NOT STREAM
+    if (digitalRead(IR_PIN) == LOW) { 
+        // Object is present. Stop streaming.
+        break; 
+    }
+
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) {
+      Serial.println("❌ Camera Frame Capture Failed");
       delay(100);
       continue;
     }
@@ -149,10 +178,12 @@ void handleStream(WiFiClient client) {
 
 // ---------------- SETUP ----------------
 void setup() {
-  Serial.begin(9600); // GPS usually 9600, Debug 115200. Check your GPS module baud rate.
+  Serial.begin(9600); 
   
   pinMode(IR_PIN, INPUT);
   pinMode(ACS_PIN, INPUT);
+  pinMode(FLASH_PIN, OUTPUT);
+  digitalWrite(FLASH_PIN, LOW); // Start with Flash OFF
 
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
@@ -169,11 +200,31 @@ void setup() {
   server.begin();
 }
 
+
+
 // ---------------- LOOP ----------------
 void loop() {
   // 1. Read Sensors
   readGPS();
-  currentVoltage = readCurrentVoltage();
+  currentAmps = readCurrent();
+  
+  // IR Sensor Logic (CORRECTED): 
+  // Standard IR Sensors: LOW when Object Detected (Reflection). HIGH when Clear/Removed.
+  int irState = digitalRead(IR_PIN);
+  
+  if (irState == LOW) { // Object DETECTED
+      if (!objectSecure) {
+         Serial.println("🔒 Object DETECTED - Secure Mode - Stream OFF");
+         // digitalWrite(FLASH_PIN, LOW); // Turn off Flash
+      }
+      objectSecure = true;
+  } else { // Object REMOVED
+      if (objectSecure) {
+         Serial.println("⚠️ Object REMOVED - Alert Mode - Stream ON");
+         // digitalWrite(FLASH_PIN, HIGH); // Turn on Flash 
+      }
+      objectSecure = false;
+  }
   
   // 2. Send Data Update Periodically
   if (millis() - lastUpdate > updateInterval) {

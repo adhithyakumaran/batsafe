@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = 'http://localhost:3000/api/device/update';
+const API_URL = 'https://batsafe.onrender.com/api/device/update';
 const DEVICE_ID = 'device001';
 
 // Mock location (Chennai, roughly)

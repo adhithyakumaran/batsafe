@@ -43,9 +43,7 @@ class ApiService {
   // Use 10.0.2.2 for Android Emulator to access localhost
   // Use localhost for Windows/iOS Simulator
   // Or use your machine's LAN IP for physical device
-  static const String baseUrl = 'http://10.147.197.99:3000/api'; 
-  
-  // For Windows development, uncomment this:
+  static const String baseUrl = 'https://batsafe.onrender.com/api';
   // static const String baseUrl = 'http://localhost:3000/api';
 
   static String getStreamUrl(String deviceId) {

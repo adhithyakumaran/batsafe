@@ -155,22 +155,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatsGrid() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'Voltage',
-            '${_deviceData?.voltage.toStringAsFixed(1) ?? "0.0"} V',
-            Icons.bolt,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Voltage',
+                '${_deviceData?.voltage.toStringAsFixed(1) ?? "0.0"} V',
+                Icons.bolt,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'Current',
+                '${_deviceData?.current.toStringAsFixed(2) ?? "0.00"} A',
+                Icons.electric_meter,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'Current',
-            '${_deviceData?.current.toStringAsFixed(2) ?? "0.00"} A',
-            Icons.electric_meter,
-          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Speed',
+                '${_deviceData?.speedKmph.toStringAsFixed(1) ?? "0.0"} km/h',
+                Icons.speed,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                'Altitude',
+                '${_deviceData?.altitude.toStringAsFixed(0) ?? "0"} m',
+                Icons.terrain,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -285,8 +309,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMap() {
     final lat = _deviceData?.lat ?? 0.0;
     final lng = _deviceData?.lng ?? 0.0;
+    final gpsLocked = _deviceData?.gpsLocked ?? false;
+    final satellites = _deviceData?.satellites ?? 0;
 
-    return Container(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Device Location", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Row(
+              children: [
+                Icon(
+                  gpsLocked ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  color: gpsLocked ? Colors.green : Colors.orange,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  gpsLocked ? 'GPS Locked ($satellites sats)' : 'Searching ($satellites sats mapped)',
+                  style: TextStyle(
+                    color: gpsLocked ? Colors.green.shade700 : Colors.orange.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
       height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

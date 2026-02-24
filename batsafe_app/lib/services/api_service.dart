@@ -6,8 +6,13 @@ class DeviceData {
   final String owner;
   final double lat;
   final double lng;
-  final double voltage; // Changed to Voltage
+  final double voltage; 
   final double current; // Amps
+  final double altitude;
+  final double speedKmph;
+  final bool gpsLocked;
+  final int satellites;
+  final double hdop;
   final String? espIP;
   final DateTime? lastSeen;
   final bool isSecure;
@@ -19,6 +24,11 @@ class DeviceData {
     required this.lng,
     required this.voltage,
     required this.current,
+    this.altitude = 0.0,
+    this.speedKmph = 0.0,
+    this.gpsLocked = false,
+    this.satellites = 0,
+    this.hdop = 0.0,
     this.espIP,
     this.lastSeen,
     this.isSecure = true, // Default to secure
@@ -32,6 +42,11 @@ class DeviceData {
       lng: double.tryParse(json['lng']?.toString() ?? '0') ?? 0.0,
       voltage: double.tryParse(json['voltage']?.toString() ?? '0') ?? 0.0,
       current: double.tryParse(json['current']?.toString() ?? '0') ?? 0.0,
+      altitude: double.tryParse(json['altitude']?.toString() ?? '0') ?? 0.0,
+      speedKmph: double.tryParse(json['speed_kmph']?.toString() ?? '0') ?? 0.0,
+      gpsLocked: json['gpsLocked'] == true || json['gpsLocked'] == 'true',
+      satellites: int.tryParse(json['satellites']?.toString() ?? '0') ?? 0,
+      hdop: double.tryParse(json['hdop']?.toString() ?? '0') ?? 0.0,
       espIP: json['espIP'],
       lastSeen: json['lastSeen'] != null ? DateTime.tryParse(json['lastSeen']) : null,
       isSecure: json['is_secure'] == true || json['is_secure'] == 'true',
@@ -40,11 +55,8 @@ class DeviceData {
 }
 
 class ApiService {
-  // Use 10.0.2.2 for Android Emulator to access localhost
-  // Use localhost for Windows/iOS Simulator
-  // Or use your machine's LAN IP for physical device
+  // Configured to point to the live render backend as requested
   static const String baseUrl = 'https://batsafe.onrender.com/api';
-  // static const String baseUrl = 'http://localhost:3000/api';
 
   static String getStreamUrl(String deviceId) {
     return '$baseUrl/device/$deviceId/stream';

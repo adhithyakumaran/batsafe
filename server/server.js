@@ -20,7 +20,10 @@ const devices = {}; // Store device data here: { "device001": { ... } }
 // ESP32 calls this to update its status
 app.post("/api/device/update", async (req, res) => {
     try {
-        const { deviceID, lat, lng, voltage, current, is_secure, espIP } = req.body;
+        const {
+            deviceID, lat, lng, voltage, current, is_secure, espIP,
+            altitude, speed_kmph, course_deg, gpsLocked, satellites, hdop, gpsStatus
+        } = req.body;
 
         if (!deviceID) {
             return res.status(400).json({ error: "deviceID is required" });
@@ -35,6 +38,13 @@ app.post("/api/device/update", async (req, res) => {
             owner: existing.owner || "Unknown",
             lat: lat || existing.lat,
             lng: lng || existing.lng,
+            altitude: altitude !== undefined ? altitude : existing.altitude,
+            speed_kmph: speed_kmph !== undefined ? speed_kmph : existing.speed_kmph,
+            course_deg: course_deg !== undefined ? course_deg : existing.course_deg,
+            gpsLocked: gpsLocked !== undefined ? gpsLocked : existing.gpsLocked,
+            satellites: satellites !== undefined ? satellites : existing.satellites,
+            hdop: hdop !== undefined ? hdop : existing.hdop,
+            gpsStatus: gpsStatus || existing.gpsStatus,
             voltage: voltage !== undefined ? voltage : existing.voltage,
             current: current !== undefined ? current : existing.current,
             is_secure: is_secure !== undefined ? is_secure : existing.is_secure,

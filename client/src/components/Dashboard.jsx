@@ -86,6 +86,20 @@ const Dashboard = () => {
                     </div>
                 </header>
 
+                {/* Security Banner */}
+                {data.is_secure === false ? (
+                    <div className="bg-red-600 text-white px-8 py-3 flex items-center justify-center space-x-3 shadow-md animate-pulse z-20">
+                        <AlertCircle size={20} className="text-white" />
+                        <span className="font-bold tracking-wider uppercase text-sm">SECURITY ALERT: Device Tampering Detected!</span>
+                        <AlertCircle size={20} className="text-white" />
+                    </div>
+                ) : (
+                    <div className="bg-green-500/10 text-green-700 px-8 py-2 flex items-center justify-center space-x-2 border-b border-green-500/20 z-20">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="font-medium text-xs tracking-wide uppercase">System Secure</span>
+                    </div>
+                )}
+
                 {/* Dashboard Grid */}
                 <div className="flex-1 p-6 overflow-y-auto no-scrollbar">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[600px]">
@@ -107,7 +121,10 @@ const Dashboard = () => {
                                 </div>
                                 <div className="space-y-3">
                                     <LogItem time="Now" message="Stream connection active" type="info" />
-                                    <LogItem time="2m ago" message="Voltage spike detected (12.4V)" type="warning" />
+                                    {data.is_secure === false && (
+                                        <LogItem time="Just Now" message="CRITICAL: Unauthorized movement detected" type="warning" />
+                                    )}
+                                    <LogItem time="2m ago" message={`Voltage reading: ${data.voltage || "12.0"}V`} type="info" />
                                     <LogItem time="15m ago" message="GPS position updated" type="info" />
                                 </div>
                             </div>
@@ -133,12 +150,12 @@ const NavItem = ({ icon: Icon, active }) => (
 );
 
 const LogItem = ({ time, message, type }) => {
-    const color = type === 'warning' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600';
+    const color = type === 'warning' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
     return (
         <div className="flex items-center space-x-3 text-sm">
-            <span className="text-gray-400 font-mono text-xs w-12 text-right">{time}</span>
-            <div className={`w-1.5 h-1.5 rounded-full ${type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
-            <span className="text-gray-700">{message}</span>
+            <span className="text-gray-400 font-mono text-xs w-16 text-right">{time}</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${type === 'warning' ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}></div>
+            <span className={`flex-1 ${type === 'warning' ? 'text-red-700 font-medium' : 'text-gray-700'}`}>{message}</span>
         </div>
     )
 }

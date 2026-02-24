@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapPin, Zap, Bolt, Navigation } from 'lucide-react';
+import { MapPin, Zap, Bolt, Navigation, FastForward, Mountain, Satellite } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -36,12 +36,18 @@ const StatCard = ({ title, value, unit, icon: Icon, trend }) => (
 );
 
 const StatsPanel = ({ data, voltageHistory }) => {
-    const { lat, lng, current, lastSeen } = data;
+    const {
+        lat, lng, current, lastSeen,
+        voltage = 12.0,
+        speed_kmph = 0,
+        altitude = 0,
+        satellites = 0,
+        gpsLocked = false
+    } = data;
 
     // Safe defaults
     const latitude = parseFloat(lat) || 0;
     const longitude = parseFloat(lng) || 0;
-    const voltage = parseFloat(current) || 0;
 
     const chartData = useMemo(() => {
         return voltageHistory.map((val, idx) => ({ time: idx, val }));
@@ -53,25 +59,37 @@ const StatsPanel = ({ data, voltageHistory }) => {
             <div className="grid grid-cols-2 gap-4">
                 <StatCard
                     title="Voltage"
-                    value={voltage.toFixed(2)}
+                    value={parseFloat(voltage).toFixed(1)}
                     unit="V"
                     icon={Zap}
                 />
                 <StatCard
                     title="Current"
-                    value={(voltage / 10).toFixed(2)} // Mock formula for current
+                    value={parseFloat(current).toFixed(2)}
                     unit="A"
                     icon={Bolt}
+                />
+                <StatCard
+                    title="Speed"
+                    value={parseFloat(speed_kmph).toFixed(1)}
+                    unit="km/h"
+                    icon={FastForward}
+                />
+                <StatCard
+                    title="Altitude"
+                    value={parseFloat(altitude).toFixed(0)}
+                    unit="m"
+                    icon={Mountain}
                 />
             </div>
 
             {/* Chart */}
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex-1 min-h-[200px] flex flex-col">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex-1 min-h-[150px] flex flex-col">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                    <Zap size={16} />
-                    <span>Power Consumption</span>
+                    <Bolt size={16} />
+                    <span>Current Draw (A)</span>
                 </h3>
-                <div className="flex-1 w-full min-h-[150px]">
+                <div className="flex-1 w-full min-h-[100px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData}>
                             <defs>
@@ -99,11 +117,11 @@ const StatsPanel = ({ data, voltageHistory }) => {
             </div>
 
             {/* Map */}
-            <div className="bg-white p-1 rounded-xl border border-gray-100 shadow-sm h-[300px] overflow-hidden relative group">
+            <div className="bg-white p-1 rounded-xl border border-gray-100 shadow-sm h-[250px] overflow-hidden relative group">
                 <MapContainer center={[latitude, longitude]} zoom={13} style={{ height: '100%', width: '100%', borderRadius: '0.75rem' }}>
                     <TileLayer
                         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     <Marker position={[latitude, longitude]}>
                         <Popup>
@@ -113,11 +131,17 @@ const StatsPanel = ({ data, voltageHistory }) => {
                 </MapContainer>
 
                 <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-2 rounded-lg shadow-lg z-[400] text-xs font-mono border border-gray-200">
-                    <div className="flex items-center space-x-2">
-                        <Navigation size={12} className="text-blue-500" />
-                        <span>{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>
+                    <div className="flex items-center space-x-3 mb-1">
+                        <div className="flex items-center space-x-1">
+                            <Navigation size={12} className="text-blue-500" />
+                            <span>{latitude.toFixed(4)}, {longitude.toFixed(4)}</span>
+                        </div>
+                        <div className={`flex items-center space-x-1 ${gpsLocked ? 'text-green-600' : 'text-yellow-600'}`}>
+                            <Satellite size={12} />
+                            <span>{satellites} Sats</span>
+                        </div>
                     </div>
-                    <div className="text-gray-400 mt-1">Updated: {lastSeen ? new Date(lastSeen).toLocaleTimeString() : 'N/A'}</div>
+                    <div className="text-gray-400">Updated: {lastSeen ? new Date(lastSeen).toLocaleTimeString() : 'N/A'}</div>
                 </div>
             </div>
         </div>
